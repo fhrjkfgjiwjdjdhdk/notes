@@ -28,19 +28,12 @@
   --sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom);
 }
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%;width:100%;overflow-x:hidden;overscroll-behavior:none;touch-action:manipulation;background:var(--bg);color:var(--ink);
+html,body{margin:0;min-height:100%;width:100%;overscroll-behavior:none;touch-action:manipulation;color:var(--ink);
   font-family:"YejiFont","YejiSerif","Songti TC","Noto Serif TC","Noto Serif CJK TC","PMingLiU",serif;
   -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
-body{overscroll-behavior:none}
-/* 材質：顆粒 + 暈影 + 極淡的強調色餘光 */
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .11 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  opacity:.85}
-body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:
-    radial-gradient(140% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.65) 100%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='.008' numOctaves='2'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>")}
-/* 燭火：不規則、緩慢的明暗，像火苗輕晃 */
+/* 材質直接畫在整張畫布上，不依賴 fixed 圖層，iPhone 上不會出現沒有材質的空白帶 */
+html{overflow-x:clip;background-color:var(--bg);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .095 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='m'><feTurbulence type='fractalNoise' baseFrequency='.008' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23m)'/></svg>")}
+body{overflow-x:clip;background:transparent}
 .ember{position:fixed;inset:0;pointer-events:none;z-index:0;
   background:radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent) 19%, transparent), transparent 66%);
   animation:flame 7s ease-in-out infinite}
@@ -100,6 +93,7 @@ input,textarea{font:inherit;font-size:max(16px,1em);color:var(--ink);background:
 .ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--dim)}
 .ib:active{background:var(--card)}
 .ib svg{width:20px;height:20px}
+.ib.pen{color:var(--accent)}
 .today{margin-bottom:30px}
 .today .d{font-size:40px;font-weight:200;letter-spacing:.04em}
 .today .d b{font-weight:500;color:var(--accent)}
@@ -120,7 +114,7 @@ input,textarea{font:inherit;font-size:max(16px,1em);color:var(--ink);background:
 .chip{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
 .moodot{width:7px;height:7px;border-radius:50%;margin-top:9px;flex:none;background:var(--accent)}
 .empty{text-align:center;margin-top:16vh;color:var(--faint);font-size:14px;letter-spacing:.2em;line-height:2.2}
-.fab{position:fixed;right:calc(22px + env(safe-area-inset-right));bottom:calc(var(--sab) + 26px);z-index:5;width:60px;height:60px;border-radius:50%;
+.fab{position:fixed;right:calc(22px + env(safe-area-inset-right));bottom:max(26px, calc(var(--sab) + 14px));z-index:5;width:60px;height:60px;border-radius:50%;
   background:var(--accent);color:#0a0a0b;display:grid;place-items:center;
   box-shadow:0 10px 34px -6px color-mix(in srgb, var(--accent) 75%, transparent),0 0 0 6px rgba(10,10,11,.6);
   animation:fabflame 5.3s ease-in-out infinite}
@@ -228,6 +222,7 @@ h2{font-size:12px;font-weight:400;letter-spacing:.4em;color:var(--faint);margin:
   <div class="top">
     <div class="mini">夜記</div>
     <div class="icons">
+      <button class="ib pen" id="b-new2" aria-label="寫一篇"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg></button>
       <button class="ib" id="b-search" aria-label="搜尋"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button>
       <button class="ib" id="b-lock" aria-label="上鎖"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></button>
       <button class="ib" id="b-set" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
@@ -489,7 +484,7 @@ $('#b-search').onclick = () => { const s = $('#searchbox'); s.hidden = !s.hidden
 $('#q').addEventListener('input', renderList);
 $('#b-lock').onclick = lock;
 $('#b-lock2').onclick = lock;
-$('#b-new').onclick = () => {
+$('#b-new').onclick = $('#b-new2').onclick = () => {
   const now = Date.now();
   const e = {id: uid(), date: todayStr(), title:'', body:'', mood:0, tags:[], created: now, updated: now};
   data.entries.push(e); openEntry(e.id, true);
