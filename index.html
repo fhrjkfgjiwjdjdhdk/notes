@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex,nofollow">
@@ -141,12 +141,14 @@ input,textarea{font:inherit;font-size:max(16px,1em);color:var(--ink);background:
 .datebox{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
 .datebox input{width:auto;font-size:16px;color:var(--dim);letter-spacing:.08em;color-scheme:dark}
 .title{min-width:0;font-size:24px;font-weight:400;padding:8px 0;letter-spacing:.03em}
-.moods{display:flex;gap:16px;align-items:center;margin:14px 0 22px}
-.moods .lbl{font-size:11px;color:var(--faint);letter-spacing:.3em;margin-right:4px}
-.mood{width:22px;height:22px;border-radius:50%;border:1px solid var(--ghost);display:grid;place-items:center}
-.mood::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--ghost)}
-.mood.on{border-color:var(--accent)}
-.mood.on::after{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.moods{display:flex;gap:6px;align-items:flex-start;margin:16px 0 24px}
+.moods .lbl{font-size:11px;color:var(--faint);letter-spacing:.3em;margin:6px 8px 0 0;white-space:nowrap}
+.mood{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11.5px;color:var(--faint);letter-spacing:.1em;padding:2px 0}
+.mood i{width:24px;height:24px;border-radius:50%;border:1px solid var(--ghost);display:grid;place-items:center}
+.mood i::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:var(--lv)}
+.mood.on{color:var(--ink)}
+.mood.on i{border-color:var(--accent)}
+.mood.on i::after{opacity:1;width:10px;height:10px;box-shadow:0 0 12px var(--accent)}
 .body{overflow-wrap:anywhere;font-size:17px;line-height:1.95;letter-spacing:.03em;min-height:46vh;resize:none;overflow:hidden;display:block}
 .tagsin{border-top:1px solid var(--line);margin-top:26px;padding-top:14px;font-size:16px;color:var(--dim)}
 .foot{font-size:11px;color:var(--faint);letter-spacing:.15em;margin-top:14px;display:flex;justify-content:space-between}
@@ -309,7 +311,7 @@ const ACCENTS = [
   {n:'薄金', c:'#e8c26b'}, {n:'紫煙', c:'#a98bff'}
 ];
 const AUTOLOCK = [{s:0,n:'立即'},{s:30,n:'30 秒'},{s:60,n:'1 分'},{s:300,n:'5 分'}];
-const MOODS = ['沉','低','平','輕','亮'];
+const MOODS = ['沉重','低落','平靜','輕鬆','明亮'];
 const WD = '日一二三四五六';
 
 const $ = s => document.querySelector(s);
@@ -493,7 +495,7 @@ $('#b-new').onclick = () => {
 
 /* ---------- 編輯 ---------- */
 const moodsEl = $('#moods');
-MOODS.forEach((n, i) => { const b = document.createElement('button'); b.className = 'mood'; b.dataset.v = i + 1; b.setAttribute('aria-label', n); moodsEl.appendChild(b); });
+MOODS.forEach((n, i) => { const b = document.createElement('button'); b.className = 'mood'; b.dataset.v = i + 1; b.style.setProperty('--lv', (0.12 + i * 0.13).toFixed(2)); b.innerHTML = `<i></i><span>${n}</span>`; moodsEl.appendChild(b); });
 function cur() { return data && data.entries.find(e => e.id === curId); }
 function paintMood(v) { moodsEl.querySelectorAll('.mood').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === v)); }
 function grow() { const t = $('#e-body'); t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
