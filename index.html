@@ -148,6 +148,20 @@ input,textarea{font:inherit;font-size:max(16px,1em);color:var(--ink);background:
 .tagsin{border-top:1px solid var(--line);margin-top:26px;padding-top:14px;font-size:16px;color:var(--dim)}
 .foot{font-size:11px;color:var(--faint);letter-spacing:.15em;margin-top:14px;display:flex;justify-content:space-between}
 
+/* ── 書寫頁：固定版面，內文在自己的區域捲動，鍵盤打開時不會把畫面往上推 ── */
+#v-edit:not([hidden]){position:fixed;left:0;right:0;top:0;z-index:3;margin:0 auto;max-width:640px;height:100vh;
+  display:flex;flex-direction:column;padding:0 22px calc(var(--sab) + 10px);will-change:transform}
+#v-edit .bar{position:static;margin:0 -22px 8px;background:none;flex:none}
+#v-edit .edtop,#v-edit .moods,#v-edit .edbottom{flex:none}
+#v-edit .body{flex:1 1 auto;min-height:0;height:auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:24px;
+  -webkit-mask-image:linear-gradient(transparent 0, #000 16px);mask-image:linear-gradient(transparent 0, #000 16px)}
+#v-edit .tagsin{margin-top:10px}
+#v-edit .del{margin:14px auto 0}
+html.editing,html.editing body{overflow:hidden;height:100%}
+/* 正在寫內文時：收起日期、標題和底部，上緣停在情緒選項 */
+html.typing #v-edit .edtop,html.typing #v-edit .edbottom{display:none}
+html.typing #v-edit .moods{margin-top:2px}
+
 /* ── 設定 ── */
 h2{font-size:12px;font-weight:400;letter-spacing:.4em;color:var(--faint);margin:34px 0 14px}
 .sw{display:flex;flex-wrap:wrap;gap:14px}
@@ -241,13 +255,17 @@ h2{font-size:12px;font-weight:400;letter-spacing:.4em;color:var(--faint);margin:
     <div class="status" id="status"><i></i><span>已加密儲存</span></div>
     <button class="done" id="b-done">完成</button>
   </div>
-  <div class="datebox"><input type="date" id="e-date"></div>
-  <input class="title" id="e-title" placeholder="標題（可留白）">
+  <div class="edtop">
+    <div class="datebox"><input type="date" id="e-date"></div>
+    <input class="title" id="e-title" placeholder="標題（可留白）">
+  </div>
   <div class="moods" id="moods"><span class="lbl">狀態</span></div>
   <textarea class="body" id="e-body" placeholder="今天想說的話⋯"></textarea>
-  <input class="tagsin" id="e-tags" placeholder="標籤，用空格或逗號分開">
-  <div class="foot"><span id="e-count"></span><span id="e-upd"></span></div>
-  <button class="del" id="b-del">刪除這篇</button>
+  <div class="edbottom">
+    <input class="tagsin" id="e-tags" placeholder="標籤，用空格或逗號分開">
+    <div class="foot"><span id="e-count"></span><span id="e-upd"></span></div>
+    <button class="del" id="b-del">刪除這篇</button>
+  </div>
 </section>
 
 <!-- 設定 -->
@@ -368,7 +386,7 @@ function applyAccent(c) { document.documentElement.style.setProperty('--accent',
 applyAccent(localStorage.getItem(AKEY) || ACCENTS[0].c);
 
 /* ---------- 畫面切換 ---------- */
-function show(id) { document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== id); window.scrollTo(0, 0); }
+function show(id) { document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== id); window.scrollTo(0, 0); document.documentElement.classList.toggle('editing', id === 'v-edit'); if (id !== 'v-edit') document.documentElement.classList.remove('typing'); if (typeof fitEdit === 'function') fitEdit(); }
 
 /* ---------- 上鎖 / 解鎖 ---------- */
 function initLock() {
@@ -495,14 +513,13 @@ const moodsEl = $('#moods');
 MOODS.forEach((n, i) => { const b = document.createElement('button'); b.className = 'mood'; b.dataset.v = i + 1; b.style.setProperty('--lv', (0.12 + i * 0.13).toFixed(2)); b.innerHTML = `<i></i><span>${n}</span>`; moodsEl.appendChild(b); });
 function cur() { return data && data.entries.find(e => e.id === curId); }
 function paintMood(v) { moodsEl.querySelectorAll('.mood').forEach(b => b.classList.toggle('on', Number(b.dataset.v) === v)); }
-function grow() { const t = $('#e-body'); t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+function grow() {}
 function count() { const e = cur(); if (!e) return; $('#e-count').textContent = `${[...e.body.replace(/\s/g, '')].length} 字`; $('#e-upd').textContent = '最後修改 ' + fmtTime(e.updated); }
 function openEntry(id, isNew) {
   curId = id; const e = cur();
   $('#e-date').value = e.date; $('#e-title').value = e.title; $('#e-body').value = e.body; $('#e-tags').value = e.tags.join(' ');
   paintMood(e.mood); setStatus('已加密儲存');
   show('v-edit'); requestAnimationFrame(grow); count();
-  if (isNew) setTimeout(() => $('#e-body').focus(), 50);
 }
 function touch(fn) { const e = cur(); if (!e) return; fn(e); e.updated = Date.now(); count(); scheduleSave(); }
 $('#e-date').addEventListener('change', ev => touch(e => e.date = ev.target.value || todayStr()));
@@ -523,6 +540,19 @@ $('#b-del').onclick = async () => {
   data.entries = data.entries.filter(x => x.id !== curId); curId = null;
   scheduleSave(); await flush(); renderList(); show('v-list'); toast('已刪除');
 };
+
+
+/* ---------- 書寫頁貼齊可視區域 ---------- */
+const edView = $('#v-edit'), vv = window.visualViewport;
+function fitEdit() {
+  if (edView.hidden) { edView.style.height = ''; edView.style.transform = ''; return; }
+  const h = vv ? vv.height : innerHeight, top = vv ? vv.offsetTop : 0;
+  edView.style.height = h + 'px'; edView.style.transform = `translateY(${top}px)`;
+}
+if (vv) { vv.addEventListener('resize', fitEdit); vv.addEventListener('scroll', fitEdit); }
+window.addEventListener('resize', fitEdit);
+$('#e-body').addEventListener('focus', () => { document.documentElement.classList.add('typing'); window.scrollTo(0, 0); setTimeout(fitEdit, 50); setTimeout(fitEdit, 350); });
+$('#e-body').addEventListener('blur', () => { document.documentElement.classList.remove('typing'); setTimeout(fitEdit, 50); });
 
 /* ---------- 設定 ---------- */
 function renderSettings() {
